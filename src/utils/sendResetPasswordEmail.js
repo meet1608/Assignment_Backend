@@ -11,15 +11,15 @@ const transporter = nodemailer.createTransport({
   tls: { rejectUnauthorized: false },
 });
 
-const sendAddPasswordEmail = async (toEmail, token) => {
-  const templatePath = path.join(__dirname, '../templates/email/addPasswordEmail.ejs');
+const sendResetPasswordEmail = async (toEmail, token) => {
+  const templatePath = path.join(__dirname, '../templates/email/resetPasswordEmail.ejs');
   
   const html = await ejs.renderFile(templatePath, { token });
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: toEmail,
-    subject: 'Set Your Password and verify your email address',
+    subject: 'Reset Your Password',
     html,
   };
 
@@ -31,4 +31,4 @@ const sendAddPasswordEmail = async (toEmail, token) => {
   }
 };
 
-module.exports = sendAddPasswordEmail;
+module.exports = sendResetPasswordEmail;
