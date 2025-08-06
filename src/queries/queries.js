@@ -1,5 +1,5 @@
-const User = require("../models/user.js");
-
+const User = require("../models/userSchema.js");
+const Article = require("../models/articlesSchema.js");
 exports.findUserByEmail = async (email) => {
   return await User.findOne({ email });
 };
@@ -29,7 +29,8 @@ exports.deleteUserById = async (id) => {
 };
 
 exports.findUserByIdAndUpdate = async (id, updateData) => {
-  return await User.findByIdAndUpdate(id, updateData, { new: true });
+  return await User.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+
 };
 
 exports.setResetPasswordToken = async (email, token) => {
@@ -50,3 +51,22 @@ exports.findUserByResetToken = async (token) => {
   });
 };
 
+exports.createArticle = async (articleData) => {
+  return await Article.create(articleData);
+};
+
+exports.getAllArticles = async () => {
+  return await Article.find();
+};
+
+exports.getArticleById = async (id) => {
+  return await Article.findById(id);
+};
+
+exports.deleteArticleById = async (id) => {
+  return await Article.findByIdAndDelete(id);
+};
+
+exports.updateArticleById = async (id, updateData) => {
+  return await Article.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+};

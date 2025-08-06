@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { getAllUsers ,getUserById,deleteUser,updateUser} = require('../controllers/usercontroller.js');
-const {createUser,setPassword,loginUser,forgotPassword,resetpassword} = require('../controllers/authcontroller.js');
+const { getAllUsers ,getUserById,deleteUser,updateUser} = require('../controllers/userController.js');
+const {createUser,setPassword,loginUser,forgotPassword,resetpassword} = require('../controllers/authController.js');
 const validate = require('../middleware/validate.js');
 const { createUserSchema, setPasswordSchema, loginSchema, forgotPasswordSchema, updateUserSchema,resetPasswordSchema } = require('../../validations/userValidation.js');
 const multer = require('multer');

@@ -45,7 +45,15 @@ exports.deleteUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const updateData = req.body;
+  if (!userId) {
+            return res.status(400).json({ message: "User ID is required",error: error.message });
+        }
+    let updateData = { ...req.body };
+
+    if (req.file) {
+      updateData.profileImage = `/uploads/${req.file.filename}`;
+    }
+
     const user = await userQueries.findUserByIdAndUpdate(userId, updateData);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -56,3 +64,4 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
