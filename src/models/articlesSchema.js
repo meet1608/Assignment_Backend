@@ -15,6 +15,16 @@ const articleSchema = new mongoose.Schema(
     articleImage: {
       type: String,
     },
+    autherProfileImage: {
+      type: mongoose.Schema.Types.String,
+      ref: "User",
+      required: true
+    },
+    autherName: {
+      type: mongoose.Schema.Types.String,
+      ref: "User",
+      required: true
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", 

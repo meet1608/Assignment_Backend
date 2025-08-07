@@ -3,13 +3,15 @@ const userQueries = require("../queries/queries.js");
 exports.createArticles = async (req, res) => {
   try {
     const userId = req.body.userId;
+    const autherProfileImage = req.body.autherProfileImage;
+    const autherName = req.body.autherName;
     const type = req.body.type || "draft";
     const { title, content } = req.body;
     const articleImage = req.files?.articleImage?.[0]
       ? `/uploads/${req.files.articleImage[0].filename}`
       : undefined;
 
-    const articleData = { title, content, articleImage, type, user: userId };
+    const articleData = { title, content, articleImage, type, user: userId, autherProfileImage: autherProfileImage, autherName: autherName };
     const article = await userQueries.createArticle(articleData);
 
     res.status(201).json({
@@ -19,6 +21,8 @@ exports.createArticles = async (req, res) => {
         title: article.title,
         content: article.content,
         articleImage: article.articleImage,
+        autherProfileImage: article.autherProfileImage,
+        autherName: article.autherName,
         user: article.user,
         type: article.type,
       },
@@ -94,6 +98,8 @@ exports.updateArticleById = async (req, res) => {
         content: article.content,
         articleImage: article.articleImage,
         user: article.user,
+        autherProfileImage: article.autherProfileImage,
+        autherName: article.autherName,
         type: article.type,
       },
     });
