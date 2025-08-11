@@ -7,8 +7,8 @@ exports.createArticleSchema = Joi.object({
   }),
   content: Joi.string().min(10).required().messages({
     "any.required": "Content is required"
- 
   }),
+  
  
 }).options({ abortEarly: false, allowUnknown: true });
 

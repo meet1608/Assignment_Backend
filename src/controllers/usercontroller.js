@@ -1,11 +1,20 @@
-const userQueries = require("../queries/queries.js");
+const userQueries = require("../services/userServices.js");
 
 
 
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await userQueries.getAllUsers();
-    res.status(200).json(users);
+     const resData = users.map(user => ({
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImage: user.profileImage,
+      role: user.role,
+      createdAt: user.createdAt,
+    }));
+    res.status(200).json(resData);
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -19,7 +28,16 @@ exports.getUserById = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(user);
+
+    const resData ={
+      id:user._id,
+      email:user.email,
+      firstName:user.firstName,
+      lastName:user.lastName,
+      profileImage:user.profileImage,
+      role:user.role
+    }
+    res.status(200).json(resData);
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -58,7 +76,7 @@ exports.updateUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json({ message: "User updated successfully", user });
+    res.status(200).json({ message: "User updated successfully", user:{id:user._id,email:user.email,firstName:user.firstName,lastName:user.lastName,profileImage:user.profileImage,role:user.role} });
   } catch (error) {
     console.error("Error updating user:", error);
     res.status(500).json({ message: "Server Error", error: error.message });

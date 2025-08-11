@@ -1,31 +1,22 @@
-const userQueries = require("../queries/queries.js");
+const userQueries = require("../services/articleServices.js");
 
 exports.createArticles = async (req, res) => {
   try {
-    const userId = req.body.userId;
-    const autherProfileImage = req.body.autherProfileImage;
-    const autherName = req.body.autherName;
     const type = req.body.type || "draft";
-    const { title, content } = req.body;
+    const {userId ,title, content } = req.body;
+
+
     const articleImage = req.files?.articleImage?.[0]
       ? `/uploads/${req.files.articleImage[0].filename}`
       : undefined;
 
-    const articleData = { title, content, articleImage, type, user: userId, autherProfileImage: autherProfileImage, autherName: autherName };
+    const articleData = { title, content, articleImage, type, user: userId};
     const article = await userQueries.createArticle(articleData);
 
+    await article.populate("user", "firstName lastName email profileImage");
     res.status(201).json({
       message: "Article created successfully",
-      article: {
-        id: article._id,
-        title: article.title,
-        content: article.content,
-        articleImage: article.articleImage,
-        autherProfileImage: article.autherProfileImage,
-        autherName: article.autherName,
-        user: article.user,
-        type: article.type,
-      },
+      article
     });
   } catch (error) {
     console.error("Error creating article:", error);
@@ -86,22 +77,15 @@ exports.updateArticleById = async (req, res) => {
       : undefined;
 
     const articleData = { title, content, articleImage, type };
-    const article = await userQueries.updateArticleById(id, articleData);
+    let article = await userQueries.updateArticleById(id, articleData);
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
+
+    article = await article.populate("user", "firstName lastName email profileImage");
     res.status(200).json({
       message: "Article updated successfully",
-      article: {
-        id: article._id,
-        title: article.title,
-        content: article.content,
-        articleImage: article.articleImage,
-        user: article.user,
-        autherProfileImage: article.autherProfileImage,
-        autherName: article.autherName,
-        type: article.type,
-      },
+      article
     });
   }
   catch(error)
