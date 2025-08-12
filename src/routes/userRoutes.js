@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require("path");
 
-const { getAllUsers ,getUserById,deleteUser,updateUser} = require('../controllers/userController.js');
+const { getAllUsers ,getUserById,deleteUser,updateUser,updateUserByAdmin} = require('../controllers/userController.js');
 const {createUser,setPassword,loginUser,forgotPassword,resetpassword} = require('../controllers/authController.js');
 const validate = require('../middleware/validate.js');
 const { createUserSchema, setPasswordSchema, loginSchema, forgotPasswordSchema, updateUserSchema,resetPasswordSchema } = require('../validations/userValidation.js');
@@ -37,5 +37,9 @@ router.put('/update/:id',authenticateToken ,upload.single('profileImage'),valida
 router.post('/forgot-password',validate(forgotPasswordSchema) ,forgotPassword);
 
 router.post('/reset-password/:token',validate(resetPasswordSchema) ,resetpassword);
+
+router.put('/update-by-admin/:id',authenticateToken ,updateUserByAdmin);
+
+
 
 module.exports = router;

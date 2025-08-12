@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendVerificationEmail = require("../utils/sendAddPasswordEmail.js");
-const userQueries = require("../services/userServices.js");
+const userQueries = require("../services/authServices.js");
 const sendResetPasswordEmail = require("../utils/sendResetPasswordEmail.js");
 
 exports.createUser = async (req, res) => {
@@ -13,16 +13,9 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: "Email Exists" });
     }
 
-    let profileImage;
-    if (req.file) {
-      profileImage = `/uploads/${req.file.filename}`;
-    } else {
-      profileImage = undefined;
-    }
+    const profileImage = req.file ? `/uploads/${req.file.filename}` : undefined;
 
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
-      expiresIn: "30m",
-    });
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "30m" });
     const tokenExpiry = Date.now() + 1800000;
 
     const user = await userQueries.createUser({
@@ -43,9 +36,7 @@ exports.createUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating user:", error);
-    return res
-      .status(500)
-      .json({ message: "Server Error", error: error.message });
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
@@ -53,8 +44,8 @@ exports.setPassword = async (req, res) => {
   try {
     const { password } = req.body;
     const { token } = req.params;
-    const user = await userQueries.findUserByToken(token);
 
+    const user = await userQueries.findUserByToken(token);
     if (!user) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
@@ -63,54 +54,62 @@ exports.setPassword = async (req, res) => {
     user.setPasswordToken = undefined;
     user.setPasswordExpires = undefined;
     user.isEmailVerified = true;
+
     await user.save();
 
     res.status(200).json({ message: "Password set successfully" });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Server Error", error: error.message });
+    console.error("Error in setPassword:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     const user = await userQueries.findUserByEmail(email);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
     if (!user.isEmailVerified) {
       return res.status(403).json({
-        message:
-          "Email not verified. Please check your email to set your password.",
+        message: "Email not verified. Please check your email to set your password.",
       });
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
+
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
+      { expiresIn: "1h" }
     );
+
     res.status(200).json({
       message: "Login successful",
       token,
-      user: { id: user._id, email: user.email, role: user.role, profileImage: user.profileImage, firstName: user.firstName, lastName: user.lastName },
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
     });
   } catch (error) {
-    console.error("Error logging in user:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    console.error("Error in loginUser:", error);
+    res.status(500).json({ message: "Unexpected server error" });
   }
 };
 
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+
     const user = await userQueries.findUserByEmail(email);
     if (!user) {
       return res.status(400).json({ message: "User does not exist" });
@@ -145,7 +144,7 @@ exports.resetpassword = async (req, res) => {
     let payload;
     try {
       payload = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
+    } catch {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
@@ -163,4 +162,3 @@ exports.resetpassword = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
-

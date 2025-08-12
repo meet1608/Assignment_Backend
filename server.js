@@ -4,6 +4,7 @@ const cors = require('cors');
 const connectDB = require('./src/connections/db');
 const userRoutes = require('./src/routes/userRoutes.js');
 const articleRoutes = require('./src/routes/articleRoutes.js');
+const Routes = require('./src/routes/index.js');
 const path = require('path');
 const { error } = require('console');
 
@@ -22,8 +23,9 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-app.use('/api/users', userRoutes);
-app.use('/api/articles', articleRoutes);
+
+
+app.use('/api',Routes)
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

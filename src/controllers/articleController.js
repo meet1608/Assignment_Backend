@@ -3,20 +3,19 @@ const userQueries = require("../services/articleServices.js");
 exports.createArticles = async (req, res) => {
   try {
     const type = req.body.type || "draft";
-    const {userId ,title, content } = req.body;
-
+    const { title, content } = req.body;
+    const userId = req.user.id;
 
     const articleImage = req.files?.articleImage?.[0]
       ? `/uploads/${req.files.articleImage[0].filename}`
       : undefined;
 
-    const articleData = { title, content, articleImage, type, user: userId};
+    const articleData = { title, content, articleImage, type, user: userId };
     const article = await userQueries.createArticle(articleData);
 
-    await article.populate("user", "firstName lastName email profileImage");
     res.status(201).json({
       message: "Article created successfully",
-      article
+      article,
     });
   } catch (error) {
     console.error("Error creating article:", error);
@@ -27,6 +26,11 @@ exports.createArticles = async (req, res) => {
 exports.getAllArticles = async (req, res) => {
   try {
     const articles = await userQueries.getAllArticles();
+
+    if (!articles || articles.length === 0) {
+      return res.status(404).json({ message: "No articles found" });
+    }
+
     res.status(200).json({
       message: "Articles fetched successfully",
       articles,
@@ -41,6 +45,7 @@ exports.getArticleById = async (req, res) => {
   try {
     const id = req.params.id;
     const article = await userQueries.getArticleById(id);
+
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
@@ -58,6 +63,7 @@ exports.deleteArticleById = async (req, res) => {
   try {
     const id = req.params.id;
     const article = await userQueries.deleteArticleById(id);
+
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
@@ -69,28 +75,29 @@ exports.deleteArticleById = async (req, res) => {
 };
 
 exports.updateArticleById = async (req, res) => {
-  try{
+  try {
     const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ message: "Article ID is required" });
+    }
     const { title, content, type } = req.body;
     const articleImage = req.files?.articleImage?.[0]
       ? `/uploads/${req.files.articleImage[0].filename}`
       : undefined;
 
     const articleData = { title, content, articleImage, type };
-    let article = await userQueries.updateArticleById(id, articleData);
+    const article = await userQueries.updateArticleById(id, articleData);
+
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
 
-    article = await article.populate("user", "firstName lastName email profileImage");
     res.status(200).json({
       message: "Article updated successfully",
-      article
+      article,
     });
-  }
-  catch(error)
-  {
+  } catch (error) {
     console.error("Error updating article by ID:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
-}
+};

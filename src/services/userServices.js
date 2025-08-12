@@ -1,53 +1,68 @@
 const User = require("../models/userSchema.js");
 
-
-exports.findUserByEmail = async (email) => {
-  return await User.findOne({ email });
-};
-
-exports.createUser = async (userData) => {
-  return await User.create(userData);
-};
-
-exports.findUserByToken = async (token) => {
-  return await User.findOne({
-    setPasswordToken: token,
-    setPasswordExpires: { $gt: Date.now() },
-    isEmailVerified: false,
-  });
-};
-
 exports.getAllUsers = async () => {
-  return await User.find();
+  try {
+    return await User.find();
+  } catch (error) {
+    console.error("Error in getAllUsers:", error);
+    throw new Error("Failed to get all users");
+  }
 };
 
 exports.getUserById = async (id) => {
-  return await User.findById(id);
+  try {
+    return await User.findById(id);
+  } catch (error) {
+    console.error("Error in getUserById:", error);
+    throw new Error("Failed to get user by id");
+  }
 };
 
 exports.deleteUserById = async (id) => {
-  return await User.findByIdAndDelete(id);
+  try {
+    return await User.findByIdAndDelete(id);
+  } catch (error) {
+    console.error("Error in deleteUserById:", error);
+    throw new Error("Failed to delete user by id");
+  }
 };
 
 exports.findUserByIdAndUpdate = async (id, updateData) => {
-  return await User.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
-
+  try {
+    return await User.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+  } catch (error) {
+    console.error("Error in findUserByIdAndUpdate:", error);
+    throw new Error("Failed to update user by id");
+  }
 };
 
 exports.setResetPasswordToken = async (email, token) => {
-  return await User.findOneAndUpdate(
-    { email },
-    {
-    resetPasswordToken: token,
-     resetPasswordExpires: Date.now() + 1800000, 
-    },
-    { new: true }
-  );
+  try {
+    return await User.findOneAndUpdate(
+      { email },
+      {
+        resetPasswordToken: token,
+        resetPasswordExpires: Date.now() + 1800000,
+      },
+      { new: true }
+    );
+  } catch (error) {
+    console.error("Error in setResetPasswordToken:", error);
+    throw new Error("Failed to set reset password token");
+  }
 };
 
 exports.findUserByResetToken = async (token) => {
-  return await User.findOne({
-    resetPasswordToken: token,
-    resetPasswordExpires: { $gt: Date.now() },
-  });
+  try {
+    return await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+  } catch (error) {
+    console.error("Error in findUserByResetToken:", error);
+    throw new Error("Failed to find user by reset token");
+  }
 };
