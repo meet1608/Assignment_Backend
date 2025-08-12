@@ -1,31 +1,21 @@
-const userQueries = require("../queries/queries.js");
+const userQueries = require("../services/articleServices.js");
 
 exports.createArticles = async (req, res) => {
   try {
-    const userId = req.body.userId;
-    const autherProfileImage = req.body.autherProfileImage;
-    const autherName = req.body.autherName;
     const type = req.body.type || "draft";
     const { title, content } = req.body;
+    const userId = req.user.id;
+
     const articleImage = req.files?.articleImage?.[0]
       ? `/uploads/${req.files.articleImage[0].filename}`
       : undefined;
 
-    const articleData = { title, content, articleImage, type, user: userId, autherProfileImage: autherProfileImage, autherName: autherName };
+    const articleData = { title, content, articleImage, type, user: userId };
     const article = await userQueries.createArticle(articleData);
 
     res.status(201).json({
       message: "Article created successfully",
-      article: {
-        id: article._id,
-        title: article.title,
-        content: article.content,
-        articleImage: article.articleImage,
-        autherProfileImage: article.autherProfileImage,
-        autherName: article.autherName,
-        user: article.user,
-        type: article.type,
-      },
+      article,
     });
   } catch (error) {
     console.error("Error creating article:", error);
@@ -36,6 +26,11 @@ exports.createArticles = async (req, res) => {
 exports.getAllArticles = async (req, res) => {
   try {
     const articles = await userQueries.getAllArticles();
+
+    if (!articles || articles.length === 0) {
+      return res.status(404).json({ message: "No articles found" });
+    }
+
     res.status(200).json({
       message: "Articles fetched successfully",
       articles,
@@ -50,6 +45,7 @@ exports.getArticleById = async (req, res) => {
   try {
     const id = req.params.id;
     const article = await userQueries.getArticleById(id);
+
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
@@ -67,6 +63,7 @@ exports.deleteArticleById = async (req, res) => {
   try {
     const id = req.params.id;
     const article = await userQueries.deleteArticleById(id);
+
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
@@ -78,8 +75,11 @@ exports.deleteArticleById = async (req, res) => {
 };
 
 exports.updateArticleById = async (req, res) => {
-  try{
+  try {
     const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ message: "Article ID is required" });
+    }
     const { title, content, type } = req.body;
     const articleImage = req.files?.articleImage?.[0]
       ? `/uploads/${req.files.articleImage[0].filename}`
@@ -87,26 +87,17 @@ exports.updateArticleById = async (req, res) => {
 
     const articleData = { title, content, articleImage, type };
     const article = await userQueries.updateArticleById(id, articleData);
+
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
+
     res.status(200).json({
       message: "Article updated successfully",
-      article: {
-        id: article._id,
-        title: article.title,
-        content: article.content,
-        articleImage: article.articleImage,
-        user: article.user,
-        autherProfileImage: article.autherProfileImage,
-        autherName: article.autherName,
-        type: article.type,
-      },
+      article,
     });
-  }
-  catch(error)
-  {
+  } catch (error) {
     console.error("Error updating article by ID:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
-}
+};
