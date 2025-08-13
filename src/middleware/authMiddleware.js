@@ -23,7 +23,7 @@ const authenticateToken = (req, res, next) => {
         else if (err.name === "NotBeforeError") {
           errorType = "TOKEN_NOT_ACTIVE";
         }
-        return res.status(403).json({sucess:false,error:errorType, message: "Invalid or Expired Token"|| err.message });
+        return res.status(403).json({sucess:false,error:errorType, message: "Invalid or Expired Token"|| err.message,error:err.message});
         
       }
       req.user = decoded; 

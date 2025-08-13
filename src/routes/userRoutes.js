@@ -38,7 +38,7 @@ router.post('/forgot-password',validate(forgotPasswordSchema) ,forgotPassword);
 
 router.post('/reset-password/:token',validate(resetPasswordSchema) ,resetpassword);
 
-router.put('/update-by-admin/:id',authenticateToken ,updateUserByAdmin);
+router.put('/update-by-admin/:id',upload.single('profileImage'),authenticateToken ,updateUserByAdmin);
 
 
 

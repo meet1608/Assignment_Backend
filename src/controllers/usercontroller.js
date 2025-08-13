@@ -54,7 +54,7 @@ exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
     const user = await userQueries.deleteUserById(userId);
-
+    
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -108,9 +108,9 @@ exports.updateUserByAdmin = async (req, res) => {
       return res.status(400).json({ message: "User ID is required" });
     }
 
-    const { firstName, lastName, role } = req.body;
+    const { firstName, lastName, role, email } = req.body;
 
-    if (!firstName && !lastName && !role) {
+    if (!firstName && !lastName && !role && !email && !req.file) {
       return res.status(400).json({ message: "No update fields provided" });
     }
 
@@ -118,6 +118,8 @@ exports.updateUserByAdmin = async (req, res) => {
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
     if (role) updateData.role = role;
+    if (email) updateData.email = email;
+    if (req.file) updateData.profileImage = `/uploads/${req.file.filename}`;
 
     const user = await userQueries.findUserByIdAndUpdate(userId, updateData);
 

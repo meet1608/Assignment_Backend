@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const sendVerificationEmail = require("../utils/sendAddPasswordEmail.js");
 const userQueries = require("../services/authServices.js");
 const sendResetPasswordEmail = require("../utils/sendResetPasswordEmail.js");
+const { error } = require("winston");
 
 exports.createUser = async (req, res) => {
   try {
@@ -23,8 +24,6 @@ exports.createUser = async (req, res) => {
       lastName,
       email,
       profileImage,
-      setPasswordToken: token,
-      setPasswordExpires: tokenExpiry,
     });
 
     await sendVerificationEmail(email, token);
@@ -51,8 +50,6 @@ exports.setPassword = async (req, res) => {
     }
 
     user.password = await bcrypt.hash(password, 10);
-    user.setPasswordToken = undefined;
-    user.setPasswordExpires = undefined;
     user.isEmailVerified = true;
 
     await user.save();
@@ -71,6 +68,9 @@ exports.loginUser = async (req, res) => {
     const user = await userQueries.findUserByEmail(email);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+    if(user.isDeleted === true){
+      return res.status(404).json({ message: "User is soft deleted by admin" });
     }
     if (!user.isEmailVerified) {
       return res.status(403).json({
@@ -99,6 +99,8 @@ exports.loginUser = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
       },
+      //we can use .select method here to select the fields we want to return
+      
     });
   } catch (error) {
     console.error("Error in loginUser:", error);

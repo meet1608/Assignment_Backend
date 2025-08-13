@@ -2,7 +2,7 @@ const User = require("../models/userSchema.js");
 
 exports.getAllUsers = async () => {
   try {
-    return await User.find();
+    return await User.find({ isDeleted: false });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
     throw new Error("Failed to get all users");
@@ -20,12 +20,13 @@ exports.getUserById = async (id) => {
 
 exports.deleteUserById = async (id) => {
   try {
-    return await User.findByIdAndDelete(id);
+    return await User.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
   } catch (error) {
     console.error("Error in deleteUserById:", error);
-    throw new Error("Failed to delete user by id");
+    throw new Error("Failed to soft delete user by id");
   }
 };
+
 
 exports.findUserByIdAndUpdate = async (id, updateData) => {
   try {
@@ -36,33 +37,5 @@ exports.findUserByIdAndUpdate = async (id, updateData) => {
   } catch (error) {
     console.error("Error in findUserByIdAndUpdate:", error);
     throw new Error("Failed to update user by id");
-  }
-};
-
-exports.setResetPasswordToken = async (email, token) => {
-  try {
-    return await User.findOneAndUpdate(
-      { email },
-      {
-        resetPasswordToken: token,
-        resetPasswordExpires: Date.now() + 1800000,
-      },
-      { new: true }
-    );
-  } catch (error) {
-    console.error("Error in setResetPasswordToken:", error);
-    throw new Error("Failed to set reset password token");
-  }
-};
-
-exports.findUserByResetToken = async (token) => {
-  try {
-    return await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() },
-    });
-  } catch (error) {
-    console.error("Error in findUserByResetToken:", error);
-    throw new Error("Failed to find user by reset token");
   }
 };

@@ -37,11 +37,9 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    setPasswordToken: {
-      type: String,
-    },
-    setPasswordExpires: {
-      type: Date,
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

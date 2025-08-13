@@ -1,4 +1,5 @@
 const User = require("../models/userSchema.js");
+const jwt = require("jsonwebtoken");
 
 exports.createUser = async (userData) => {
   try {
@@ -20,13 +21,10 @@ exports.findUserByEmail = async (email) => {
 
 exports.findUserByToken = async (token) => {
   try {
-    return await User.findOne({
-      setPasswordToken: token,
-      setPasswordExpires: { $gt: Date.now() },
-      isEmailVerified: false,
-    });
-  } catch (error) {
-    console.error("Error in findUserByToken service:", error);
-    throw new Error("Failed to find user by token");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return await User.findOne({ email: decoded.email });
+  } catch {
+    return null; 
   }
 };
+

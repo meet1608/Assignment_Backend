@@ -6,8 +6,7 @@ module.exports = (schema) => (req, res, next) => {
 
     const errors = error.details.map(err => err.message);
     return res.status(400).json({
-      message: "Validation failed",
-      errors
+      message: errors,
     });
   }
   

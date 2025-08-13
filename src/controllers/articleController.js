@@ -1,5 +1,4 @@
-const userQueries = require("../services/articleServices.js");
-
+const articleQueries = require("../services/articleServices.js");
 exports.createArticles = async (req, res) => {
   try {
     const type = req.body.type || "draft";
@@ -11,8 +10,8 @@ exports.createArticles = async (req, res) => {
       : undefined;
 
     const articleData = { title, content, articleImage, type, user: userId };
-    const article = await userQueries.createArticle(articleData);
-
+    // const article = await userQueries.createArticle(articleData);
+    const article = await articleQueries.createArticle(articleData);
     res.status(201).json({
       message: "Article created successfully",
       article,
@@ -25,7 +24,14 @@ exports.createArticles = async (req, res) => {
 
 exports.getAllArticles = async (req, res) => {
   try {
-    const articles = await userQueries.getAllArticles();
+    // const articles = await userQueries.getAllArticles({});
+   const search = req.query.search || "";
+    // if query param all=true, ignore userId
+    const getAll = req.query.all === 'true';
+
+    const userId = getAll ? null : (req.user && req.user.id ? req.user.id : null);
+    const articles = await articleQueries.getAllArticles(search,userId);
+     
 
     if (!articles || articles.length === 0) {
       return res.status(404).json({ message: "No articles found" });
@@ -44,8 +50,8 @@ exports.getAllArticles = async (req, res) => {
 exports.getArticleById = async (req, res) => {
   try {
     const id = req.params.id;
-    const article = await userQueries.getArticleById(id);
-
+    // const article = await userQueries.getArticleById(id);
+      const article = await articleQueries.getArticleById(id);
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
@@ -62,8 +68,8 @@ exports.getArticleById = async (req, res) => {
 exports.deleteArticleById = async (req, res) => {
   try {
     const id = req.params.id;
-    const article = await userQueries.deleteArticleById(id);
-
+                // const article = await userQueries.deleteArticleById(id);
+    const article = await articleQueries.deleteArticleById(id);
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
@@ -86,8 +92,8 @@ exports.updateArticleById = async (req, res) => {
       : undefined;
 
     const articleData = { title, content, articleImage, type };
-    const article = await userQueries.updateArticleById(id, articleData);
-
+    // const article = await userQueries.updateArticleById(id, articleData);
+    const article = await articleQueries.updateArticleById(id, articleData);
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
