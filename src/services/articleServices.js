@@ -67,7 +67,6 @@ exports.getAllArticles = async (search, userId, type, page = 1, limit = 10) => {
       });
       matchStage.$or = condition;
     }
-
     const countResult = await Article.aggregate([
       {
         $lookup: {
@@ -86,7 +85,6 @@ exports.getAllArticles = async (search, userId, type, page = 1, limit = 10) => {
       },
     ]);
     const total = countResult[0] ? countResult[0].total : 0;
-
     const result = await Article.aggregate([
       {
         $lookup: {
@@ -130,13 +128,13 @@ exports.getAllArticles = async (search, userId, type, page = 1, limit = 10) => {
         },
       },
     ]);
-
     return { articles: result, total };
   } catch (error) {
     console.error("Error in getAllArticles service:", error);
     throw new Error("Failed to get all articles");
   }
 };
+
 
 exports.getArticleById = async (id) => {
   try {

@@ -1,9 +1,12 @@
 const User = require("../models/userSchema.js");
 const mongoose = require("mongoose");
 
-exports.getAllUsers = async (search, page = 1, limit = 10) => {
+exports.getAllUsers = async (search, page = 1, limit = 10, excludeId) => {
   try {
-    const matchStage = { isDeleted: false };
+    const matchStage = {
+      isDeleted: false,
+      _id: { $ne: new mongoose.Types.ObjectId(excludeId) },//by doing this we can get all users except the logged in user
+    };
     if (search) {
       const words = search.trim().split(/\s+/).filter(Boolean);
       matchStage.$or = words.flatMap((word) => [
@@ -13,14 +16,13 @@ exports.getAllUsers = async (search, page = 1, limit = 10) => {
       ]);
     }
 
-    // Get total count
+    
     const countResult = await User.aggregate([
       { $match: matchStage },
       { $count: "total" },
     ]);
     const total = countResult[0] ? countResult[0].total : 0;
 
-    // Get paginated results
     const users = await User.aggregate([
       { $match: matchStage },
       { $sort: { updatedAt: -1 } },
@@ -33,7 +35,7 @@ exports.getAllUsers = async (search, page = 1, limit = 10) => {
           firstName: 1,
           lastName: 1,
           profileImage: {
-            $ifNull: ["$profileImage", "/uploads/profile.avif"]
+            $ifNull: ["$profileImage", "/uploads/profile.avif"],
           },
           role: 1,
           createdAt: 1,
@@ -51,8 +53,6 @@ exports.getAllUsers = async (search, page = 1, limit = 10) => {
   }
 };
 
-
-
 exports.getUserById = async (id) => {
   try {
     const result = await User.aggregate([
@@ -63,9 +63,10 @@ exports.getUserById = async (id) => {
           email: 1,
           firstName: 1,
           lastName: 1,
-profileImage: {
-            $ifNull: ["$profileImage", "/uploads/profile.avif"]
-          },          role: 1,
+          profileImage: {
+            $ifNull: ["$profileImage", "/uploads/profile.avif"],
+          },
+          role: 1,
           createdAt: 1,
           updatedAt: 1,
           isEmailVerified: 1,
@@ -97,7 +98,7 @@ exports.findUserByIdAndUpdate = async (id, updateData) => {
       : null;
 
     if (!ObjectId) {
-      return null; //when id is not valid 
+      return null; //when id is not valid
     }
     const updated = await User.findByIdAndUpdate(id, updateData, {
       new: true,
@@ -114,16 +115,17 @@ exports.findUserByIdAndUpdate = async (id, updateData) => {
           email: 1,
           firstName: 1,
           lastName: 1,
-profileImage: {
-            $ifNull: ["$profileImage", "/uploads/profile.avif"]
-          },          role: 1,
+          profileImage: {
+            $ifNull: ["$profileImage", "/uploads/profile.avif"],
+          },
+          role: 1,
           createdAt: 1,
           updatedAt: 1,
           isEmailVerified: 1,
           _id: 0,
         },
       },
-    ])
+    ]);
 
     return result[0] || null;
   } catch (error) {
