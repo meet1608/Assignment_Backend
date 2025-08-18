@@ -14,41 +14,45 @@ const {
   createArticleSchema,
 } = require("../validations/articleValidation.js");
 const authenticateToken = require("../middleware/authMiddleware.js");
+const authorizeRole = require("../middleware/roleAuth.js");
+
 const router = express.Router();
 
 // Multer storage setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../uploads")); // absolute path for safety
+    cb(null, path.join(__dirname, "../uploads")); 
   },
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + "-" + file.originalname;
-    cb(null, uniqueName); // ensures unique filenames
+    cb(null, uniqueName); 
   },
 });
-const upload = multer({ storage });
+const upload = multer({ storage ,limits:{fileSize: 5*1024*1024}});
 
 router.post(
   "/create",
   authenticateToken,
+  authorizeRole(["user", "admin"]),
   upload.fields([{ name: "articleImage", maxCount: 1 }]),
   validate(createArticleSchema),
   createArticles
 );
 
-router.get("/all",authenticateToken ,getAllArticles);
+router.get("/all",authenticateToken ,authorizeRole(["admin","user"]),getAllArticles);
 
 
-router.delete("/delete/:id", authenticateToken,deleteArticleById);
+router.delete("/delete/:id", authenticateToken,authorizeRole(["user", "admin"]),deleteArticleById);
 
 router.put("/update/:id",
   authenticateToken,
+  authorizeRole(["user", "admin"]),
   upload.fields([{ name: "articleImage", maxCount: 1 }]),
   validate(createArticleSchema),
   updateArticleById
 );
 
-router.get("/:id",authenticateToken,getArticleById);
+router.get("/:id",authenticateToken,authorizeRole(["user", "admin"]),getArticleById);
 
 
 module.exports = router;

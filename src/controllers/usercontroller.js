@@ -1,29 +1,34 @@
 const userQueries = require("../services/userServices.js");
+const fs = require("fs");
+const path = require("path");
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await userQueries.getAllUsers();
+    const search = req.query.search || "";
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const { users, total } = await userQueries.getAllUsers(search, page, limit);
 
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "No users found" });
     }
 
-    const resData = users.map((user) => ({
-      id: user._id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      profileImage: user.profileImage,
-      role: user.role,
-      createdAt: user.createdAt,
-    }));
-
-    res.status(200).json(resData);
+    res.status(200).json({
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
 
 exports.getUserById = async (req, res) => {
   try {
@@ -34,16 +39,7 @@ exports.getUserById = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const resData = {
-      id: user._id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      profileImage: user.profileImage,
-      role: user.role,
-    };
-
-    res.status(200).json(resData);
+    res.status(200).json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -54,7 +50,7 @@ exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
     const user = await userQueries.deleteUserById(userId);
-    
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -68,33 +64,42 @@ exports.deleteUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    if (!userId) {
+    if (!userId)
       return res.status(400).json({ message: "User ID is required" });
-    }
+
+    const existingUser = await userQueries.getUserById(userId);
+    if (!existingUser)
+      return res.status(404).json({ message: "User not found" });
 
     const updateData = { ...req.body };
 
     if (req.file) {
       updateData.profileImage = `/uploads/${req.file.filename}`;
+
+      if (existingUser.profileImage) {
+        const oldImagePath = path.join(
+          __dirname,
+          "..",
+          existingUser.profileImage
+        );
+        try {
+          await fs.promises.unlink(oldImagePath);
+        } catch (err) {
+          console.error("Error deleting old profile image:", err.message);
+        }
+      }
     }
 
-    const user = await userQueries.findUserByIdAndUpdate(userId, updateData);
+    const updatedUser = await userQueries.findUserByIdAndUpdate(
+      userId,
+      updateData
+    );
+    if (!updatedUser)
+      return res.status(404).json({ message: "User not found after update" });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.status(200).json({
-      message: "User updated successfully",
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImage: user.profileImage,
-        role: user.role,
-      },
-    });
+    res
+      .status(200)
+      .json({ message: "User updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Error updating user:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -104,40 +109,54 @@ exports.updateUser = async (req, res) => {
 exports.updateUserByAdmin = async (req, res) => {
   try {
     const userId = req.params.id;
-    if (!userId) {
+    if (!userId)
       return res.status(400).json({ message: "User ID is required" });
-    }
 
-    const { firstName, lastName, role, email } = req.body;
-
-    if (!firstName && !lastName && !role && !email && !req.file) {
-      return res.status(400).json({ message: "No update fields provided" });
-    }
+    const existingUser = await userQueries.getUserById(userId);
+    if (!existingUser)
+      return res.status(404).json({ message: "User not found" });
 
     const updateData = {};
+    const { firstName, lastName, role, email } = req.body;
+
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
     if (role) updateData.role = role;
     if (email) updateData.email = email;
-    if (req.file) updateData.profileImage = `/uploads/${req.file.filename}`;
 
-    const user = await userQueries.findUserByIdAndUpdate(userId, updateData);
+    if (req.file) {
+      // Set new profile image path
+      updateData.profileImage = `/uploads/${req.file.filename}`;
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      // Delete old profile image if it exists
+      if (existingUser.profileImage) {
+        const oldImagePath = path.join(
+          __dirname,
+          "..",
+          existingUser.profileImage
+        );
+        try {
+          await fs.promises.unlink(oldImagePath);
+        } catch (err) {
+          console.error("Error deleting old profile image:", err.message);
+        }
+      }
     }
 
-    res.status(200).json({
-      message: "User updated successfully",
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        profileImage: user.profileImage,
-      },
-    });
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "No update fields provided" });
+    }
+
+    const updatedUser = await userQueries.findUserByIdAndUpdate(
+      userId,
+      updateData
+    );
+    if (!updatedUser)
+      return res.status(404).json({ message: "User not found after update" });
+
+    res
+      .status(200)
+      .json({ message: "User updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Error updating user by admin:", error);
     res.status(500).json({ message: "Server Error", error: error.message });

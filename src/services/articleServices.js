@@ -29,7 +29,9 @@ exports.createArticle = async (articleData) => {
             firstName: "$user.firstName",
             lastName: "$user.lastName",
             email: "$user.email",
-            profileImage: "$user.profileImage",
+            profileImage: {
+              $ifNull: ["$user.profileImage", "/uploads/profile.avif"],
+            },
           },
         },
       },
@@ -41,38 +43,50 @@ exports.createArticle = async (articleData) => {
   }
 };
 
-exports.getAllArticles = async (search, userId) => {
+exports.getAllArticles = async (search, userId, type, page = 1, limit = 10) => {
   try {
     const matchStage = {
       "user.isDeleted": false,
     };
-
     if (userId) {
       matchStage["user._id"] = new mongoose.Types.ObjectId(userId);
     }
-
+    if (type && ["draft", "published"].includes(type)) matchStage.type = type;
     if (search) {
       const words = search
         .trim()
         .split(/\s+/)
         .filter((word) => word.length > 0);
-      //by this we splits strings in the arrays
-
       const condition = [];
-
       words.forEach((word) => {
         condition.push(
-          { "user.firstName": { $regex: word, $options: "i" } }, //regex checks field contains this search string or not and options i for case sensitive
+          { "user.firstName": { $regex: word, $options: "i" } },
           { "user.lastName": { $regex: word, $options: "i" } },
-          { "user.email": { $regex: word, $options: "i" } },
-          { title: { $regex: word, $options: "i" } },
-          { content: { $regex: word, $options: "i" } }
+          { title: { $regex: word, $options: "i" } }
         );
       });
-
       matchStage.$or = condition;
-      //here we have to use $or for multiple conditions we are checking first user account is deleted and then we are searching
     }
+
+    const countResult = await Article.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $match: matchStage,
+      },
+      {
+        $count: "total",
+      },
+    ]);
+    const total = countResult[0] ? countResult[0].total : 0;
+
     const result = await Article.aggregate([
       {
         $lookup: {
@@ -82,16 +96,19 @@ exports.getAllArticles = async (search, userId) => {
           as: "user",
         },
       },
-
       { $unwind: "$user" },
-
       {
         $match: matchStage,
       },
       {
-        $sort: { updatedAt: -1 },
+        $sort: { createdAt: -1 },
       },
-
+      {
+        $skip: (page - 1) * limit,
+      },
+      {
+        $limit: limit,
+      },
       {
         $project: {
           title: 1,
@@ -100,19 +117,21 @@ exports.getAllArticles = async (search, userId) => {
           type: 1,
           createdAt: 1,
           updatedAt: 1,
-
           user: {
             _id: "$user._id",
             firstName: "$user.firstName",
             lastName: "$user.lastName",
             email: "$user.email",
-            profileImage: "$user.profileImage",
+            profileImage: {
+              $ifNull: ["$user.profileImage", "/uploads/profile.avif"],
+            },
             isDeleted: "$user.isDeleted",
           },
         },
       },
     ]);
-    return result;
+
+    return { articles: result, total };
   } catch (error) {
     console.error("Error in getAllArticles service:", error);
     throw new Error("Failed to get all articles");
@@ -159,7 +178,9 @@ exports.getArticleById = async (id) => {
             firstName: "$user.firstName",
             lastName: "$user.lastName",
             email: "$user.email",
-            profileImage: "$user.profileImage",
+            profileImage: {
+              $ifNull: ["$user.profileImage", "/uploads/profile.avif"],
+            },
             isDeleted: "$user.isDeleted",
           },
         },
@@ -224,7 +245,9 @@ exports.updateArticleById = async (id, updateData) => {
             firstName: "$user.firstName",
             lastName: "$user.lastName",
             email: "$user.email",
-            profileImage: "$user.profileImage",
+            profileImage: {
+              $ifNull: ["$user.profileImage", "/uploads/profile.avif"],
+            },
           },
         },
       },

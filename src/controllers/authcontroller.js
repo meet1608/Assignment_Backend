@@ -7,37 +7,41 @@ const { error } = require("winston");
 
 exports.createUser = async (req, res) => {
   try {
-    const { firstName, lastName, email } = req.body;
+    const { firstName, lastName, email, role } = req.body;
 
     const existingUser = await userQueries.findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ message: "Email Exists" });
     }
 
-    const profileImage = req.file ? `/uploads/${req.file.filename}` : undefined;
-
     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "30m" });
-    const tokenExpiry = Date.now() + 1800000;
+
+    let userRole = "user"; 
+    if (req.user && req.user.role === "admin" && role) {
+      userRole = role; 
+    }
 
     const user = await userQueries.createUser({
       firstName,
       lastName,
       email,
-      profileImage,
+      role: userRole,
+      profileImage: "/uploads/profile.avif", 
     });
 
     await sendVerificationEmail(email, token);
 
     res.status(201).json({
-      message: "User Created. Check email to set password.",
+      message: "Please Check email to set password.",
       token,
-      user: { id: user._id, email: user.email },
+      user: { id: user._id, email: user.email, role: user.role },
     });
   } catch (error) {
     console.error("Error creating user:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
 
 exports.setPassword = async (req, res) => {
   try {
@@ -83,7 +87,7 @@ exports.loginUser = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -95,11 +99,10 @@ exports.loginUser = async (req, res) => {
         id: user._id,
         email: user.email,
         role: user.role,
-        profileImage: user.profileImage,
+        profileImage: user.profileImage || "/uploads/profile.avif",
         firstName: user.firstName,
         lastName: user.lastName,
       },
-      //we can use .select method here to select the fields we want to return
       
     });
   } catch (error) {
@@ -156,6 +159,8 @@ exports.resetpassword = async (req, res) => {
     }
 
     user.password = await bcrypt.hash(password, 10);
+    user.isEmailVerified = true;
+
     await user.save();
 
     res.status(200).json({ message: "Password reset successfully" });

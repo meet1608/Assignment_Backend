@@ -18,7 +18,13 @@ exports.createUserSchema = Joi.object({
     "string.empty": "Email is required",
     "string.email": "Enter a valid email address",
     "any.required": "Email is required"
-  })
+  }),
+  role: Joi.string()
+    .valid("user", "admin")
+    .default("user")
+    .messages({
+      "any.only": "Role must be either user or admin"
+    })
 });
 
 exports.loginSchema = Joi.object({
