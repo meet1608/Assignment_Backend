@@ -46,6 +46,7 @@ exports.createArticle = async (articleData) => {
 exports.getAllArticles = async (search, userId, type, page = 1, limit = 10) => {
   try {
     const matchStage = {
+      isDeleted: false,
       "user.isDeleted": false,
     };
     if (userId) {
@@ -146,7 +147,7 @@ exports.getArticleById = async (id) => {
     }
 
     const result = await Article.aggregate([
-      { $match: { _id: ObjectId } },
+      { $match: { _id: ObjectId, isDeleted: false } },
       {
         $lookup: {
           from: "users",
@@ -193,12 +194,17 @@ exports.getArticleById = async (id) => {
 
 exports.deleteArticleById = async (id) => {
   try {
-    return await Article.findByIdAndDelete(id);
+    return await Article.findByIdAndUpdate(
+      id,
+      { $set: { isDeleted: true } }, 
+      { new: true }                    
+    );
   } catch (error) {
     console.error("Error in deleteArticleById service:", error);
-    throw new Error("Failed to delete article by id");
+    throw new Error("Failed to soft delete article by id");
   }
 };
+
 
 exports.updateArticleById = async (id, updateData) => {
   try {

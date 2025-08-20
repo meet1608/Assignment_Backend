@@ -25,7 +25,11 @@ const articleSchema = new mongoose.Schema(
       type: String,
       enum: ["draft", "published"],
       default: "draft",
-    }
+    },
+    isDeleted: {
+    type: Boolean,
+    default: false  
+  },
   },
   {
     timestamps: true
