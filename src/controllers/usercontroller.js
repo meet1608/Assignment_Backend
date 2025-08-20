@@ -53,7 +53,7 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
-
+//this change is for checking commit
 exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
