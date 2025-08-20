@@ -84,7 +84,7 @@ exports.getAllArticles = async (search, userId, type, page = 1, limit = 10) => {
       {
         $count: "total",
       },
-    ]);
+    ]);//we use this for finding total how many articles are ther in database
     const total = countResult[0] ? countResult[0].total : 0;
     const result = await Article.aggregate([
       {
