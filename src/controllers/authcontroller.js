@@ -10,15 +10,26 @@ exports.createUser = async (req, res) => {
     const { firstName, lastName, email, role } = req.body;
 
     const existingUser = await userQueries.findUserByEmail(email);
+
     if (existingUser) {
+      if (!existingUser.isEmailVerified) {
+        return res
+          .status(400)
+          .json({
+            message:
+              "User exists but email not verified.",
+          });
+      }
       return res.status(400).json({ message: "Email Exists" });
     }
 
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "30m" });
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
+      expiresIn: "30m",
+    });
 
-    let userRole = "user"; 
+    let userRole = "user";
     if (req.user && req.user.role === "admin" && role) {
-      userRole = role; 
+      userRole = role;
     }
 
     const user = await userQueries.createUser({
@@ -26,7 +37,7 @@ exports.createUser = async (req, res) => {
       lastName,
       email,
       role: userRole,
-      profileImage: "/uploads/profile.avif", 
+      profileImage: "/uploads/profile.avif",
     });
 
     await sendVerificationEmail(email, token);
@@ -41,7 +52,6 @@ exports.createUser = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
-
 
 exports.setPassword = async (req, res) => {
   try {
@@ -73,12 +83,13 @@ exports.loginUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    if(user.isDeleted === true){
+    if (user.isDeleted === true) {
       return res.status(404).json({ message: "User is soft deleted by admin" });
     }
     if (!user.isEmailVerified) {
       return res.status(403).json({
-        message: "Email not verified. Please check your email to set your password.",
+        message:
+          "Email not verified. Please check your email to set your password.",
       });
     }
     const isMatch = await bcrypt.compare(password, user.password);
@@ -103,7 +114,6 @@ exports.loginUser = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
       },
-      
     });
   } catch (error) {
     console.error("Error in loginUser:", error);
@@ -118,6 +128,9 @@ exports.forgotPassword = async (req, res) => {
     const user = await userQueries.findUserByEmail(email);
     if (!user) {
       return res.status(400).json({ message: "User does not exist" });
+    }
+    if (user.isEmailVerified === false) {
+      return res.status(400).json({ message: "Email not verified" });
     }
 
     const token = jwt.sign(

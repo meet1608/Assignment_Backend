@@ -87,6 +87,9 @@ exports.updateUserSchema = Joi.object({
   profileImage: Joi.string().optional().messages({
     "string.base": "Profile image must be a string",
   }),
+  role: Joi.string().valid("user", "admin").optional().messages({
+    "any.only": "User Can not update role",
+  }),
 });
 
 exports.objectIdSchema = Joi.string()
@@ -96,3 +99,5 @@ exports.objectIdSchema = Joi.string()
     "string.pattern.base": "Invalid MongoDB ID",
     "any.required": "ID is required",
   });
+
+

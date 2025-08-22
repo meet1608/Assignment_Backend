@@ -82,14 +82,7 @@ exports.getUserById = async (id) => {
   }
 };
 
-exports.deleteUserById = async (id) => {
-  try {
-    return await User.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
-  } catch (error) {
-    console.error("Error in deleteUserById:", error);
-    throw new Error("Failed to soft delete user by id");
-  }
-};
+
 
 exports.findUserByIdAndUpdate = async (id, updateData) => {
   try {
@@ -106,6 +99,11 @@ exports.findUserByIdAndUpdate = async (id, updateData) => {
     });
 
     if (!updated) return null; // User not found
+
+
+    if(updated.isDeleted === true){
+return {isDeleted: true};
+    }
 
     const result = await User.aggregate([
       { $match: { _id: ObjectId } },

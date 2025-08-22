@@ -58,16 +58,22 @@ exports.getAllArticles = async (search, userId, type, page = 1, limit = 10) => {
         .trim()
         .split(/\s+/)
         .filter((word) => word.length > 0);
-      const condition = [];
-      words.forEach((word) => {
-        condition.push(
-          { "user.firstName": { $regex: word, $options: "i" } },
-          { "user.lastName": { $regex: word, $options: "i" } },
-          { title: { $regex: word, $options: "i" } }
-        );
-      });
-      matchStage.$or = condition;
+
+      matchStage.$or = [
+        {
+          $and: words.map((word) => ({
+            "user.firstName": { $regex: word, $options: "i" },
+          })),
+        },
+        {
+          $and: words.map((word) => ({
+            "user.lastName": { $regex: word, $options: "i" },
+          })),
+        },
+        { title: { $regex: search, $options: "i" } },
+      ];
     }
+
     const countResult = await Article.aggregate([
       {
         $lookup: {
@@ -84,7 +90,7 @@ exports.getAllArticles = async (search, userId, type, page = 1, limit = 10) => {
       {
         $count: "total",
       },
-    ]);//we use this for finding total how many articles are ther in database
+    ]); //we use this for finding total how many articles are ther in database
     const total = countResult[0] ? countResult[0].total : 0;
     const result = await Article.aggregate([
       {
@@ -135,7 +141,6 @@ exports.getAllArticles = async (search, userId, type, page = 1, limit = 10) => {
     throw new Error("Failed to get all articles");
   }
 };
-
 
 exports.getArticleById = async (id) => {
   try {
@@ -192,18 +197,6 @@ exports.getArticleById = async (id) => {
   }
 };
 
-exports.deleteArticleById = async (id) => {
-  try {
-    return await Article.findByIdAndUpdate(
-      id,
-      { $set: { isDeleted: true } }, 
-      { new: true }                    
-    );
-  } catch (error) {
-    console.error("Error in deleteArticleById service:", error);
-    throw new Error("Failed to soft delete article by id");
-  }
-};
 
 
 exports.updateArticleById = async (id, updateData) => {
@@ -220,6 +213,10 @@ exports.updateArticleById = async (id, updateData) => {
       runValidators: true,
     });
     if (!updated) return null; // Article not found
+
+    if (updated.isDeleted === true) {
+      return { isDeleted: true };
+    }
 
     const result = await Article.aggregate([
       { $match: { _id: ObjectId } },

@@ -15,20 +15,11 @@ const {
 } = require("../validations/articleValidation.js");
 const authenticateToken = require("../middleware/authMiddleware.js");
 const authorizeRole = require("../middleware/roleAuth.js");
+const upload = require("../middleware/fileUpload.js");
 
 const router = express.Router();
 
-// Multer storage setup
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../uploads")); 
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + "-" + file.originalname;
-    cb(null, uniqueName); 
-  },
-});
-const upload = multer({ storage ,limits:{fileSize: 5*1024*1024}});
+
 
 router.post(
   "/create",
@@ -42,7 +33,7 @@ router.post(
 router.get("/all",authenticateToken ,authorizeRole(["admin","user"]),getAllArticles);
 
 
-router.delete("/delete/:id", authenticateToken,authorizeRole(["user", "admin"]),deleteArticleById);
+router.delete("/delete/:id", authenticateToken,authorizeRole(["user", "admin"]),updateArticleById);
 
 router.put("/update/:id",
   authenticateToken,
